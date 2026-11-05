@@ -43,6 +43,9 @@ blockquote{border-left:3px solid #ccc;margin:.5rem 0;padding-left:.8rem;color:#4
 code{background:#f4f4f4;padding:0 .2rem}
 .page{break-before:page}
 .page:first-of-type{break-before:auto}
+.pager{display:flex;justify-content:space-between;margin-top:1.5rem;padding-top:.6rem;border-top:1px solid #ddd}
+.pager a,.pager span{padding:.4rem 0}
+.pager .off{color:#bbb}
 @media screen and (max-width:640px){
   body{padding:.8rem;font-size:15px}
   nav{gap:.9rem}
@@ -53,7 +56,7 @@ code{background:#f4f4f4;padding:0 .2rem}
 /* letter paper, extra left margin for binder holes */
 @page{size:letter;margin:.6in .6in .6in .9in}
 @media print{
-  nav{display:none}
+  nav,.pager{display:none}
   body{padding:0;max-width:none;font-size:11pt}
   a{color:inherit;text-decoration:none}
   th,tr.now td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -262,12 +265,27 @@ def index_page():
     return page("Running weeks", f'<section class="page"><h1>Running weeks</h1>{weeks_table(load_weeks())}</section>')
 
 
+def pager(weeks, i):
+    """Prev / All weeks / Next links for week i."""
+    def link(j, text):
+        if 0 <= j < len(weeks):
+            return f'<a href="/week/{weeks[j]["stem"]}">{text}</a>'
+        return f'<span class="off">{text}</span>'
+    return (f'<div class="pager">{link(i - 1, "← Prev")}'
+            f'<a href="/">All weeks</a>{link(i + 1, "Next →")}</div>')
+
+
+def week_full_page(weeks, i):
+    w = weeks[i]
+    return page(f"Week of {w['label']}", week_section(w) + pager(weeks, i))
+
+
 def week_page(stem):
-    path = WEEKS / f"{stem}.md"
-    if not path.is_file():
+    weeks = load_weeks()
+    i = next((j for j, w in enumerate(weeks) if w["stem"] == stem), None)
+    if i is None:
         raise FileNotFoundError
-    w = load_week(path)
-    return page(f"Week of {w['label']}", week_section(w))
+    return week_full_page(weeks, i)
 
 
 def doc_page(name):
@@ -311,8 +329,8 @@ def build(out=ROOT / "public"):
     (out / "index.html").write_text(index_page())
     (out / "progress.html").write_text(doc_page("progress"))
     weeks = load_weeks()
-    for w in weeks:
-        (out / "week" / f"{w['stem']}.html").write_text(page(f"Week of {w['label']}", week_section(w)))
+    for i, w in enumerate(weeks):
+        (out / "week" / f"{w['stem']}.html").write_text(week_full_page(weeks, i))
     print(f"Built {len(weeks)} weeks -> {out}")
 
 
