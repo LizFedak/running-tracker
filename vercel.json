@@ -1,0 +1,7 @@
+{
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "python3 serve.py --build",
+  "outputDirectory": "public",
+  "cleanUrls": true
+}
